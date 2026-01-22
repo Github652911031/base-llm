@@ -1,4 +1,6 @@
-# Base LLM | 从 NLP 到 LLM 的算法全栈教程
+<div align="center">
+  <h1>Base LLM | 从 NLP 到 LLM 的算法全栈教程</h1>
+</div>
 
 <div align='center'>
   <img src="./logo.svg" alt="base-llm Logo" width="70%">
