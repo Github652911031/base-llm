@@ -83,7 +83,7 @@
 ## 内容大纲
 
 ### 第一部分：理论篇
-- **第 1 章：NLP简介**
+- **第 1 章：NLP 简介**
     - [x] [NLP 概述](./docs/chapter1/01_nlp_intro.md)
     - [x] [环境准备](./docs/chapter1/02_preparation.md)
 - **第 2 章：文本表示与词向量**
@@ -151,7 +151,7 @@
 
 ### 第六部分：多模态前沿
 - **第 1 章：认识多模态边界**
-  - [x] [多模态全景概述](./docs/chapter19/01_multimodal_definition.md)
+    - [x] [多模态概述](./docs/chapter19/01_multimodal_definition.md)
 
 ## 致谢
 
