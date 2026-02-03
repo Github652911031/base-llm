@@ -32,11 +32,11 @@ pip show jieba
 
 **基于规则与词典**的分词方法是 NLP 领域最早期的技术方案，也是最符合人类直觉的分词方式。它的核心依赖于**一部大型词典**和**一套匹配规则**。`jieba` 的默认模式实现的就是这种方式。它会先基于一个**前缀词典（Trie 树）**，高效地构建出一个包含句子中所有可能词语组合的**有向无环图（DAG）**。接着，通过动态规划算法寻找一条概率最大的路径，作为最终分词结果。这个过程可以被量化为一个概率计算问题。假设一个分词路径由一个词语序列组成，将其表示为 $w_1, w_2, ..., w_n$，其中 $w_i$ 代表序列中的第 i 个词。那么这条路径的概率可以近似为：
 
-$$ P(w_1, w_2, ..., w_n) \approx P(w_1) \times P(w_2) \times ... \times P(w_n) $$
+$$ P(w_1, w_2, ..., w_n) \approx P(w_1) \times P(w_2) \times ... \times P(w_n) \tag{2.1} $$
 
 其中，每个词 $w_i$ 的概率 $P(w_i)$ 可以通过其在词典（语料库）中的频率来估算：
 
-$$ P(w_i) = \frac{\text{词 } w_i \text{ 的词频}}{\text{词典中所有词的总词频}} $$
+$$ P(w_i) = \frac{\text{词 } w_i \text{ 的词频}}{\text{词典中所有词的总词频}} \tag{2.2} $$
 
 `jieba` 的目标就是找到一条路径，使这个累乘的概率值最大。
 
@@ -44,7 +44,7 @@ $$ P(w_i) = \frac{\text{词 } w_i \text{ 的词频}}{\text{词典中所有词的
 
 在实际工程中，将大量小于 1 的概率值直接相乘，很容易导致结果趋近于 0，造成**浮点数下溢**，无法比较路径优劣。为此，`jieba` 采用了**对数概率**技术，利用对数函数 `log` 的性质，将概率的**累乘**转换为 `log` 概率的**累加**。寻找概率最大值就等价于寻找 `log` 概率之和的最大值，有效避免了下溢问题。其数学形式如下：
 
-$$ \underset{w}{\arg\max} \sum_{i=1}^{n} \log P(w_i) $$
+$$ \underset{w}{\arg\max} \sum_{i=1}^{n} \log P(w_i) \tag{2.3} $$
 
 解决了数值计算的稳定性问题后，为了避免暴力计算所有可能路径带来的巨大计算量，`jieba` 还引入了**动态规划**的思想。它会从句子的**末尾**开始，**从后向前**递推计算到每个位置的最优切分路径及其 `log` 概率之和，并记录下来。最终，从句子开头出发，根据记录好的最优路径信息，就能反推出整个句子的最优分词结果。
 
@@ -54,11 +54,11 @@ $$ \underset{w}{\arg\max} \sum_{i=1}^{n} \log P(w_i) $$
 
 例如，对于句子“给阿姨倒一杯卡布奇诺”，在构建好 DAG 之后，`jieba` 在“`一/一杯`”这个位置附近可能会存在两条候选路径，即**路径 A**（`给 阿姨 倒 一杯 卡布奇诺`）和**路径 B**（`给 阿姨 倒 一 杯 卡布奇诺`）。如果直接从“概率乘积”的角度看，这两条路径的概率分别近似为 $P(A) \approx P(\text{给}) \times P(\text{阿姨}) \times P(\text{倒}) \times P(\text{一杯}) \times P(\text{卡布奇诺})$ 与 $P(B) \approx P(\text{给}) \times P(\text{阿姨}) \times P(\text{倒}) \times P(\text{一}) \times P(\text{杯}) \times P(\text{卡布奇诺})$。而在真实实现中，`jieba` 会把上面的乘积全部换成 **log 概率的加和** 来计算，对应的对数概率分别为 $\log P(A) \approx \log P(\text{给}) + \log P(\text{阿姨}) + \log P(\text{倒}) + \log P(\text{一杯}) + \log P(\text{卡布奇诺})$ 和 $\log P(B) \approx \log P(\text{给}) + \log P(\text{阿姨}) + \log P(\text{倒}) + \log P(\text{一}) + \log P(\text{杯}) + \log P(\text{卡布奇诺})$。由于对数函数是单调递增的，**谁的 log 概率和更大，谁对应的原始概率也更大**。假设“一杯”是一个高频词，它单独出现的概率 $P(\text{一杯})$ 会远大于两个单字“一”和“杯”的概率之积 $P(\text{一}) \times P(\text{杯})$，于是就有：
 
-$$\log P(\text{一杯}) \gg \log P(\text{一}) + \log P(\text{杯})$$
+$$\log P(\text{一杯}) \gg \log P(\text{一}) + \log P(\text{杯}) \tag{2.4}$$
 
 因此：
 
-$$\log P(A) > \log P(B)$$
+$$\log P(A) > \log P(B) \tag{2.5}$$
 
 动态规划要做的就是**在句子的每一个位置上，自动完成这种“在所有可能后续切分中，挑出 log 概率和最大的那条路径”**的比较，而不是像例子里只人工枚举两条路径。最终，它就会把路径 A 选为“全句最优分词结果”。
 
@@ -216,52 +216,90 @@ print(f"加载词性词典后: {dic_words}")
 加载词性词典后: [pair('九', 'n'), pair('头', 'n'), pair('虫', 'n'), pair('让', 'v'), pair('奔波儿灞', 'nr'), pair('把', 'p'), pair('唐僧', 'nr'), pair('师徒', 'n'), pair('除掉', 'v')]
 ```
 
-可以看到 `jieba` 根据词典的“指示”，成功地将“九头”拆分。对于结果中的词性标签（如 `n`、`v`），是因为 `jieba` 采用的是兼容 **ICTCLAS** 的标记集，常见标签及其含义如下：
+可以看到 `jieba` 根据词典的“指示”，成功地将“九头”拆分。对于结果中的词性标签（如 `n`、`v`），是因为 `jieba` 采用的是兼容 **ICTCLAS** 的标记集，常见标签及其含义如表 2-1 所示。
 
-| 标签 | 含义 | 标签 | 含义 |
-| :--- | :--- | :--- | :--- |
-| n | 名词 | nr | 人名 |
-| ns | 地名 | nt | 机构团体 |
-| nz | 其他专名 | v | 动词 |
-| a | 形容词 | d | 副词 |
-| m | 数词 | q | 量词 |
-| r | 代词 | p | 介词 |
-| c | 连词 | u | 助词 |
-| t | 时间词 | x | 非语素字 |
-| w | 标点符号 | un | 未知词 |
+<div align="center">
+
+<table border="1" style="margin: 0 auto;">
+<tr>
+  <td style="text-align: center;"><strong>标签</strong></td>
+  <td style="text-align: center;"><strong>含义</strong></td>
+  <td style="text-align: center;"><strong>标签</strong></td>
+  <td style="text-align: center;"><strong>含义</strong></td>
+</tr>
+<tr>
+  <td style="text-align: center;">n</td>
+  <td style="text-align: center;">名词</td>
+  <td style="text-align: center;">nr</td>
+  <td style="text-align: center;">人名</td>
+</tr>
+<tr>
+  <td style="text-align: center;">ns</td>
+  <td style="text-align: center;">地名</td>
+  <td style="text-align: center;">nt</td>
+  <td style="text-align: center;">机构团体</td>
+</tr>
+<tr>
+  <td style="text-align: center;">nz</td>
+  <td style="text-align: center;">其他专名</td>
+  <td style="text-align: center;">v</td>
+  <td style="text-align: center;">动词</td>
+</tr>
+<tr>
+  <td style="text-align: center;">a</td>
+  <td style="text-align: center;">形容词</td>
+  <td style="text-align: center;">d</td>
+  <td style="text-align: center;">副词</td>
+</tr>
+<tr>
+  <td style="text-align: center;">m</td>
+  <td style="text-align: center;">数词</td>
+  <td style="text-align: center;">q</td>
+  <td style="text-align: center;">量词</td>
+</tr>
+<tr>
+  <td style="text-align: center;">r</td>
+  <td style="text-align: center;">代词</td>
+  <td style="text-align: center;">p</td>
+  <td style="text-align: center;">介词</td>
+</tr>
+<tr>
+  <td style="text-align: center;">c</td>
+  <td style="text-align: center;">连词</td>
+  <td style="text-align: center;">u</td>
+  <td style="text-align: center;">助词</td>
+</tr>
+<tr>
+  <td style="text-align: center;">t</td>
+  <td style="text-align: center;">时间词</td>
+  <td style="text-align: center;">x</td>
+  <td style="text-align: center;">非语素字</td>
+</tr>
+<tr>
+  <td style="text-align: center;">w</td>
+  <td style="text-align: center;">标点符号</td>
+  <td style="text-align: center;">un</td>
+  <td style="text-align: center;">未知词</td>
+</tr>
+</table>
+
+<p><em>表 2-1 常见词性标签含义</em></p>
+
+</div>
 
 ### 2.4 从“分词”到“分块”
 
-随着深度学习，特别是 `BERT` 和 `GPT` 等大规模预训练模型的兴起，传统意义上“将句子切分成标准词语”的分词范式有了重大改变。现代 NLP 模型更倾向于采用 **“无分词”或“弱分词”** 的策略，将文本处理成更基础的、数据驱动的单元，主要分为以下两种流派：
+随着深度学习，特别是 `BERT` 和 `GPT` 等大规模预训练模型的兴起，传统意义上“将句子切分成标准词语”的分词范式有了重大改变。现代 NLP 模型更倾向于采用**“无分词”或“弱分词”**的策略，将文本处理成更基础的、数据驱动的单元，主要分为**字粒度**和**子词粒度**两种流派。
 
-#### 2.4.1 字粒度分词（Character-level）
+（1）字粒度分词
 
-以 `BERT` 模型为代表，在处理中文时，其最基础的分词策略就是**字粒度**，即直接将每个汉字视为一个独立的Token。
+以 `BERT` 模型为代表，在处理中文时，它的分词策略就是**字粒度**，也就是直接将每个汉字视为一个独立的 Token。这种策略有效解决了 **OOV** 问题，因为常用汉字的数量是有限的，模型可以轻松构建一个全覆盖的“字表”，摆脱对庞大词典的依赖。但是，它的代价也显而易见。首先是**词汇语义的丢失**，像“博物馆”这样的词被拆散为三个独立的字后，模型需要消耗更多资源去重新学习它们之间的组合关系；其次，相较于词，字的**序列长度会显著增加**，这加大了模型的计算负担。
 
-- **优点** ：
-    - **有效解决了 OOV 问题**：常用汉字的数量是有限的（几千个），模型可以构建一个全覆盖的“字表”。任何由标准汉字组成的词语都不会“未登录”，因为构成它的每个字都在字表里。
-    - **无需维护庞大词典**：摆脱了对词典的依赖。
-- **缺点** ：
-    - **丢失词汇语义**：像“博物馆”这样的词，其整体语义在输入层面被人为地拆散为三个独立的字，模型需要消耗更多的计算资源在内部重新学习这些字的组合关系。
-    - **输入序列更长**：相较于词，字的序列长度会显著增加，加大了模型的处理负担。
+（2）子词分词
 
-#### 2.4.2 子词分词（Subword）
+以 `GPT` 系列为代表的大语言模型，则采用了更灵活的**子词（Subword）** 切分方案，其中最主流的算法是 **BPE（BytePair Encoding）** [^3]。BPE 的思路是在原始语料上迭代合并高频**相邻**字节对（或字符对）成一个新的、更大的单元，并将其加入词表。例如，如果 “deep” 和 “er” 经常**相邻**出现，BPE 就会将它们合并，最终可能将 “deeper” 作为一个整体加入词表。这种方案在“词”和“字”之间取得了有效平衡，高频词被完整保留，低频词或新词则被拆解为更小的有意义单元（如字或字节组合），既保持了信息完整性又有效解决了 OOV 问题，同时还能通过控制合并次数来限制词表大小。不过，由于 BPE 生成的子词主要基于统计频率而非语言学规则（如词根词缀），结果可解释性较差，且对训练语料有较强依赖，遇到领域外文本时可能会因过度切分而导致效果下降。
 
-以 `GPT` 系列为代表的大语言模型，则采用了更灵活的**子词（Subword）** 切分方案，其中最主流的算法是 **BPE（BytePair Encoding）** [^3]。
-
-BPE的核心思想是：在原始的字符语料库上，迭代地将高频的相邻字节对（或字符对）合并成一个新的、更大的单元，并将其加入词表。
-
-例如，对于语料中频繁出现的 "deeper"，BPE可能会先学习到 "er"，然后是 "deep"，最终可能将 "deeper" 作为一个整体或"deep"+"er" 的组合加入词表。
-
-- **优点** ：
-    - **有效平衡** ：它在“词”和“字”之间取得了较好的平衡。高频词（如“机器学习”）可以被完整保留，低频词（如“擘画”）可以被拆分为更小的有意义的子词或单字（`擘`+`画`），而OOV（如一个新造的网络词）则可以被拆解成字符或字节组合，从而**在保持信息完整性的前提下有效解决了OOV问题**。
-    - **词表大小可控**：可以通过控制合并次数，将词表大小有效控制在预设范围内。
-
-- **缺点** :
-    - **语言学可解释性不强**：BPE等算法产生的子词通常是基于统计频率，而非语言学上的词根、词缀等有意义的语素。这使得分词结果的可解释性变差。
-    - **对训练语料的强依赖性**：子词词表是根据特定语料训练的，对于领域外的文本，其分词效果可能会退化，将很多词切成单字，导致处理效率降低。
-
-子词分词是当前大语言模型处理文本的标准方案，既保留了词的语义信息，又具备了字的灵活性。
+尽管存在上述局限性，子词分词凭借在词表大小和语义表达之间的出色平衡，依然成为了当前大语言模型处理文本的标准方案。它能够在保留词的语义信息的同时，又具备字的灵活性。
 
 ## 练习
 
