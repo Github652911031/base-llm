@@ -15,7 +15,6 @@ class ImageEncoder(nn.Module):
     def __init__(self, output_dim):
         super(ImageEncoder, self).__init__()
         # 使用来自timm的ViT模型
-        # 说明：timm 的预训练 ViT 默认是 ImageNet 预训练，通常要求输入做 ImageNet mean/std 归一化
         # num_classes=0 会移除分类 head，输出 backbone 特征（维度为 vit.num_features）
         self.vit = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=0)
         self.proj = nn.Linear(self.vit.num_features, output_dim, bias=False)
@@ -81,8 +80,6 @@ class CLIP(nn.Module):
 
 def load_cifar10_dataset(batch_size, image_size=224, root='./cifar10', mean=None, std=None):
     """加载CIFAR10数据集"""
-    if mean is None or std is None:
-        raise ValueError("mean/std 不能为空：请从 timm 模型的 default_cfg 中读取并传入。")
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)), 
         transforms.ToTensor(),
@@ -103,10 +100,8 @@ if __name__ == "__main__":
     clip_model = CLIP(embed_dim=512).to(device)
     clip_model.text_encoder.model.to(device)
 
-    # 加载数据（严格使用 timm 模型的默认 mean/std，不做回退保底）
+    # 加载数据
     cfg = clip_model.image_encoder.vit.default_cfg
-    if 'mean' not in cfg or 'std' not in cfg:
-        raise RuntimeError("timm 模型 default_cfg 中缺少 mean/std，请检查所用模型或其配置。")
     mean = cfg['mean']
     std = cfg['std']
     data_root = os.path.join(os.path.dirname(__file__), "cifar10")
