@@ -69,6 +69,7 @@ anaconda_projects/
 
 # Models
 models/
+cifar10/
 
 # LLM API keys
 *.key
