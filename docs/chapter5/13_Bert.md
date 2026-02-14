@@ -86,27 +86,46 @@ $$
 
 ### 2.3 特殊词元
 
-BERT 在输入序列中引入了几个特殊的词元，它们在预训练和微调阶段扮演着重要的角色：
+BERT 在输入序列中引入了几个特殊的词元，它们在预训练和微调阶段扮演着重要的角色，具体的含义与作用见表 5-2。
 
-- **`[CLS]` (Classification)**:
-  - 这个词元被添加到 **每个输入序列的开头**。
-  - BERT 的一个特殊设计是，这个 `[CLS]` 词元在经过整个编码器网络后的最终输出向量，被视为整个输入序列的 **聚合表示**。
-  - 因此，在进行文本分类、情感分析等句子级别的任务时，通常只取用 `[CLS]` 对应的输出向量，然后将其送入一个分类器。
+<div align="center">
 
-- **`[SEP]` (Separator)**:
-  - 这个词元用于 **分隔不同的句子**。
-  - 例如，在输入是单个句子时，它被添加在句子的末尾。
-  - 在输入是句子对时，它被用在两个句子之间，以及整个序列的末尾。
+<table border="1" style="margin: 0 auto;">
+<tr>
+  <td style="text-align: center;"><strong>特殊 Token</strong></td>
+  <td style="text-align: center;"><strong>全称</strong></td>
+  <td style="text-align: center;"><strong>说明</strong></td>
+</tr>
+<tr>
+  <td style="text-align: center;"><code>[CLS]</code></td>
+  <td style="text-align: center;">Classification</td>
+  <td style="text-align: left;">添加在<strong>每个输入序列的开头</strong>。其最终输出向量被视为整个输入序列的<strong>聚合表示</strong>，常用于文本分类等句子级任务。</td>
+</tr>
+<tr>
+  <td style="text-align: center;"><code>[SEP]</code></td>
+  <td style="text-align: center;">Separator</td>
+  <td style="text-align: left;">用于<strong>分隔不同的句子</strong>。单句输入时加在句末，在输入是句子对时加在两句之间及整个序列末尾。</td>
+</tr>
+<tr>
+  <td style="text-align: center;"><code>[MASK]</code></td>
+  <td style="text-align: center;">Mask</td>
+  <td style="text-align: left;">仅在<strong>预训练阶段</strong>使用，用于“掩盖”掉输入序列中的某些词元，是“掩码语言模型”任务的核心。</td>
+</tr>
+<tr>
+  <td style="text-align: center;"><code>[PAD]</code></td>
+  <td style="text-align: center;">Padding</td>
+  <td style="text-align: left;">用于将不同长度的输入序列补齐到相同长度。在计算注意力时会被 <code>Attention Mask</code> 屏蔽。</td>
+</tr>
+<tr>
+  <td style="text-align: center;"><code>[UNK]</code></td>
+  <td style="text-align: center;">Unknown</td>
+  <td style="text-align: left;">当分词器遇到词表中不存在的字符或词汇时，会将其替换为该特殊词元。</td>
+</tr>
+</table>
 
-- **`[MASK]`**:
-  - 这个词元仅在 **预训练阶段** 使用，用于“掩盖”掉输入序列中的某些词元，是“掩码语言模型”任务的核心。
+<p><em>表 5-2 BERT 特殊词元及其作用</em></p>
 
-- **`[PAD]` (Padding)**:
-  - 用于将不同长度的输入序列补齐到相同的长度（例如 512），以便进行批量处理。
-  - 在计算注意力时，这些位置会被 `Attention Mask` 屏蔽，不参与计算。
-
-- **`[UNK]` (Unknown)**:
-    - 当分词器遇到词表中不存在的字符或词汇时，会将其替换为该特殊词元。
+</div>
 
 ## 三、BERT 的预训练任务
 
@@ -119,9 +138,7 @@ BERT 在输入序列中引入了几个特殊的词元，它们在预训练和微
 
 ### 3.1 任务一：掩码语言模型 (Masked Language Model, MLM)
 
-传统的语言模型（如 GPT）是单向的，只能根据前面的词预测下一个词。如果我们想让模型同时利用上下文信息，简单地将左右两侧的词都作为输入来预测当前词，会导致一个问题，在多层网络中，模型会“间接地看到自己”，预测任务将变得毫无意义。
-
-为了解决这个问题，BERT 引入了 MLM。它的思路是在输入文本中随机遮盖掉一部分词元（Token），然后训练模型去**根据上下文预测这些被遮盖的词元**。这就像在做“完形填空”一样，迫使模型学习词元之间深层次的语义关系和句法结构。MLM 的执行策略如下：
+传统的语言模型（如 GPT）是单向的，只能根据前面的词预测下一个词。如果我们想让模型同时利用上下文信息，简单地将左右两侧的词都作为输入来预测当前词，会导致一个问题，在多层网络中，模型会“间接地看到自己”，预测任务将变得毫无意义。为了解决这个问题，BERT 引入了 MLM。它的思路是在输入文本中随机遮盖掉一部分词元（Token），然后训练模型去**根据上下文预测这些被遮盖的词元**。这就像在做“完形填空”一样，迫使模型学习词元之间深层次的语义关系和句法结构。MLM 的执行策略如下：
 
 （1）**随机选择**：在每一个训练序列中，随机挑选 **15%** 的词元作为预测目标。
 
