@@ -160,16 +160,56 @@ GPT 的架构本质就是将 Transformer 的解码器模块进行堆叠，所以
 
 尽管都基于 Transformer，但由于选择了编码器和解码器两条不同的路线，BERT 和 GPT 在设计和应用上有着明显区别（此处主要对比原始版本的 BERT 和 GPT-1/2/3，不包含后续的各类变体）。
 
-| 特性 | BERT (Encoder) | GPT (Decoder) |
-| :--- | :--- | :--- |
-| **核心结构** | Transformer 编码器 | Transformer 解码器 |
-| **注意力机制** | 标准自注意力（双向，能看到全文） | 掩码自注意力（单向，只能看左边） |
-| **预训练任务** | 掩码语言模型, 下一句预测 | 因果语言模型 / 预测下一个词 |
-| **输入表示** | 词元 + 位置 + **片段** | 词元 + 位置 |
-| **最大长度** | 通常 512 | 1024 (GPT-2) / 2048 (GPT-3) |
-| **归一化** | Post-Norm | Pre-Norm (GPT-2/3) |
-| **应用模式** | **微调（Fine-tuning）**: 加分类头，更新权重 | **提示（Prompting）**: 设计提示词，不更新权重 (Zero/Few-shot) |
-| **适用场景** | 语言理解（NLU）: 分类、NER、抽取式问答 | 语言生成（NLG）: 写作、对话、生成式任务 |
+<div align="center">
+<table border=1 style='margin: auto; width: max-content;'>
+  <tr>
+    <td style='text-align: center;'>特性</td>
+    <td style='text-align: center;'>BERT (Encoder)</td>
+    <td style='text-align: center;'>GPT (Decoder)</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>核心结构</b></td>
+    <td style='text-align: center;'>Transformer 编码器</td>
+    <td style='text-align: center;'>Transformer 解码器</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>注意力机制</b></td>
+    <td style='text-align: center;'>标准自注意力（双向，能看到全文）</td>
+    <td style='text-align: center;'>掩码自注意力（单向，只能看左边）</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>预训练任务</b></td>
+    <td style='text-align: center;'>掩码语言模型, 下一句预测</td>
+    <td style='text-align: center;'>因果语言模型 / 预测下一个词</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>输入表示</b></td>
+    <td style='text-align: center;'>词元 + 位置 + <b>片段</b></td>
+    <td style='text-align: center;'>词元 + 位置</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>最大长度</b></td>
+    <td style='text-align: center;'>通常 512</td>
+    <td style='text-align: center;'>1024 (GPT-2) / 2048 (GPT-3)</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>归一化</b></td>
+    <td style='text-align: center;'>Post-Norm</td>
+    <td style='text-align: center;'>Pre-Norm (GPT-2/3)</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>应用模式</b></td>
+    <td style='text-align: center;'><b>微调（Fine-tuning）</b>: 加分类头，更新权重</td>
+    <td style='text-align: center;'><b>提示（Prompting）</b>: 设计提示词，不更新权重 (Zero/Few-shot)</td>
+  </tr>
+  <tr>
+    <td style='text-align: center;'><b>适用场景</b></td>
+    <td style='text-align: center;'>语言理解（NLU）: 分类、NER、抽取式问答</td>
+    <td style='text-align: center;'>语言生成（NLG）: 写作、对话、生成式任务</td>
+  </tr>
+</table>
+<p><em>表 5-4 BERT 与 GPT 的差异对比</em></p>
+</div>
 
 ## 三、GPT 代码实战
 
