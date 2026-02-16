@@ -28,7 +28,7 @@ pip install gensim
 
 ## 二、Gensim 工作流
 
-> [本节完整代码](https://github.com/FutureUnreal/base-nlp/blob/main/code/C2/04_gensim.ipynb)
+> [本节完整代码](https://github.com/datawhalechina/base-llm/blob/main/code/C2/04_gensim.ipynb)
 
 在 Gensim 中，将原始文本转换为TF-IDF或主题模型向量，通常遵循一个标准的三步流程。这个流程是后续应用的基础。
 
@@ -165,7 +165,7 @@ for topic in lda_model.print_topics():
     print(topic)
 
 # 5. 推断新文档的主题分布
-new_headline = "詹姆斯获得常规赛MVP"
+new_headline = "巨星詹姆斯获得常规赛MVP"
 new_headline_bow = dictionary.doc2bow(jieba.lcut(new_headline))
 topic_distribution = lda_model[new_headline_bow]
 print(f"\n新标题 '{new_headline}' 的主题分布:")
@@ -180,7 +180,7 @@ print(topic_distribution)
 (1, '0.066*"，" + 0.039*"篮球" + 0.039*"刷新" + 0.039*"历史" + 0.039*"记录" + 0.038*"得分" + 0.038*"巨星" + 0.037*"刺激" + 0.036*"降息" + 0.036*"反弹"')
 
 新标题 '巨星詹姆斯获得常规赛MVP' 的主题分布:
-[(0, 0.27247813), (1, 0.7275219)]
+[(0, np.float32(0.27243596)), (1, np.float32(0.72756404))]
 ```
 通过 LDA，不仅可以将一篇文档表示为一个主题概率分布（Gensim 默认以稀疏列表返回；例如 90% 体育、10% 财经），还能清晰地看到每个主题由哪些核心词构成。若新文本在词典中几乎无重叠词（`doc2bow` 为空），推断出的主题分布可能接近均匀（例如 2 个主题时约为 0.5/0.5）。
 
@@ -270,7 +270,7 @@ print(f"\n'市场' 的向量维度: {market_vector.shape}")
 
 ### 5.3 模型的持久化
 
-在实际项目中，通常会把训练好的词向量保存下来，避免重复训练。推荐只保存 `KeyedVectors` 对象，它更轻量、高效。
+在实际项目中，通常会把训练好的词向量保存下来。如果后续不再进行增量训练，推荐只保存 `KeyedVectors` 对象 (`model.wv`)。因为完整的模型对象包含了哈夫曼树、梯度累积量等仅在训练阶段需要的中间状态，去除这些冗余信息不仅能节省存储空间，更能降低内存占用并提升加载速度，保障线上服务的稳定性。
 
 ```python
 from gensim.models import KeyedVectors

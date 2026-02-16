@@ -12,11 +12,11 @@
 
 诚然，在以 Transformer 为基础的大语言模型兴起后，传统意义上“语言学分词”的应用场景在逐步减少，现代大语言模型更多采用子词（Subword）等切分策略。但 `jieba` 作为一个经典、简单、代码开源的中文分词库，仍是**理解传统分词思想、学习 NLP 基础工程实践**的重要工具 [^1]。
 
-> [本节完整代码](https://github.com/FutureUnreal/base-nlp/blob/main/code/C2/01_jieba.py)
+> [本节完整代码](https://github.com/datawhalechina/base-llm/blob/main/code/C2/01_jieba.py)
 
 ### 2.1 jieba 安装
 
-`jieba` 是目前流行的 Python 中文分词库之一，对初学者较为友好，可以使用如下 `pip` 命令安装。不过，在安装之前不要忘了用 `conda activate llm` 激活虚拟环境。
+`jieba` 是目前流行的 Python 中文分词库之一，对初学者较为友好，可以使用如下 `pip` 命令安装。不过，在安装之前不要忘了用 `conda activate base-llm` 激活虚拟环境。
 
 ```bash
 pip install jieba

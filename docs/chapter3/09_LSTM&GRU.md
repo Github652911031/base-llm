@@ -119,7 +119,7 @@ $$
 
 ## 四、从零实现一个 LSTM
 
-> [本节完整代码](https://github.com/FutureUnreal/base-nlp/blob/main/code/C3/02_LSTM.py)
+> [本节完整代码](https://github.com/datawhalechina/base-llm/blob/main/code/C3/02_LSTM.py)
 
 为了更深刻地理解 LSTM 内部复杂的信息流动，可以像实现 RNN 一样，基于公式，用 NumPy 手写一个 LSTM 的前向传播过程。这里我们同样实现一个不含偏置项的简化版 LSTM，计算公式如下：
 
