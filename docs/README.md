@@ -143,6 +143,7 @@
 - **第 1 章：安全全景与威胁建模**
     - [x] [大模型安全总览](./docs/chapter16/01_LLM_safety_overview.md)
     - [x] [威胁建模及风险分析](./docs/chapter16/02_threat_modeling_analysis.md)
+- **第 2 章：安全工程：对齐与架构设计**
 
 ### 第六部分：多模态前沿
 - **第 1 章：认识多模态边界**
