@@ -96,11 +96,11 @@
 
 （1）**感应头机制** [^2]：这是从模型内部注意力层面的机械可解释性角度提出的。研究发现，Transformer 模型在预训练的特定阶段会激发出一种特殊的注意力头——“感应头”。它的核心行为模式是“匹配并复制”，当模型在上下文中发现当前输入 `A` 此前出现过，它会将注意力回溯到前一个 `A`，并倾向于直接预测其后跟随的 Token `B` 作为当前的输出。这种底层的复制机制是**少样本学习**中模式匹配的微观基础。
 
-（2）**隐式梯度下降假说** [^3]：从优化算法的数学角度看，有研究证明 Transformer 的注意力前向计算过程，在数学形式上高度等价于对模型线性层进行了一步或多步的梯度下降（也称为元优化）。也就意味着在推理阶段，上下文中的少样本示例实际上相当于在模型内部临时进行了一次“隐式微调”，这些基于前文示例算出的“元梯度（Meta-Gradients）”只存在于瞬时的激活值里，从而动态改变后续的输出分布。
+（2）**隐式学习动力学（隐式权重更新）** [^3]：有研究从“前向计算本身就是一种学习过程”的角度解释上下文学习：在 Transformer block 内，自注意力会把上下文中的示例信息写入激活，再与后续的 MLP 组合，等效地产生一种对后续计算起作用的低秩“权重更新/适配”效应。这个过程无需显式反向传播或持久化的权重改动，但会以瞬时激活的形式影响后续 token 的 logits，从而动态改变输出分布。
 
-（3）**隐式贝叶斯推断框架** [^4]：这是**将零样本和少样本完美统一**的宏观解释框架。从概率统计视角出发，大模型在海量语料上学习到了自然语言和世界的“生成式潜变量结构”。在上下文中提供提示词时，模型实际上是在做潜变量的贝叶斯推断。在**少样本**中，观测数据（示例）足够多，模型能够推断出提示词背后的“潜在任务概念”（如“逆序输出”）。而在**零样本**任务中，观测数据只有孤零零的指令，模型只能极其依赖庞大的先验知识去推断任务概念。正因为缺乏后验数据的修正，零样本才更容易受限于固有的常见模式而翻车。
+（3）**（近似）贝叶斯视角与其检验** [^4][^5]：有一类工作把上下文学习理解为“在上下文中对潜在任务/潜变量做（近似）推断”的过程，用先验—后验来解释零样本与少样本的差异；也有研究提出可操作的统计检验，并在其实验设置下观察到 LLM 的上下文学习会偏离严格的贝叶斯性质。总体而言，贝叶斯更像是一类有启发性的解释框架，而非已被普遍证明的严格等价。
 
-这三大理论从微观执行（注意力单元复制）、中观优化（隐式微调等价性）到宏观统计（概率推断），共同揭示了现代大语言模型强大泛化能力的底层本质。
+这三大理论从微观执行（注意力单元复制）、中观适配（隐式权重更新）到宏观统计（概率推断），共同揭示了现代大语言模型强大泛化能力的底层本质。
 
 ## 二、进阶提示词技术
 
@@ -113,7 +113,7 @@
 
 ### 2.1 思维链
 
-**思维链（Chain-of-Thought, CoT）** 技术 [^5] 鼓励模型在给出最终答案之前，先显式地输出中间的推理步骤。这种方法不仅客观上增加了生成过程的计算步数，让模型获得了更多的“思考时间”，而且将一个复杂的大问题拆解成了多个简单连贯的小逻辑节点。在应用层面上，这项技术经历了一条清晰且快速的演进路线。最初的研究提出了需要手动编写详尽推理示例的**多样本思维链（Few-Shot CoT）**。随后，研究人员发现只需在提示词末尾添加一句“Let's think step by step”就能触发模型自我推导，也就是**零样本思维链（Zero-Shot CoT）**。紧接着，学术界又提出了尝试让大模型自动化构建推理示例的**自动思维链（Auto-CoT）** [^6]。
+**思维链（Chain-of-Thought, CoT）** 技术 [^6] 鼓励模型在给出最终答案之前，先显式地输出中间的推理步骤。这种方法不仅客观上增加了生成过程的计算步数，让模型获得了更多的“思考时间”，而且将一个复杂的大问题拆解成了多个简单连贯的小逻辑节点。在应用层面上，这项技术经历了一条清晰且快速的演进路线。最初的研究提出了需要手动编写详尽推理示例的**多样本思维链（Few-Shot CoT）**。随后，研究人员发现只需在提示词末尾添加一句“Let's think step by step”就能触发模型自我推导，也就是**零样本思维链（Zero-Shot CoT）**。紧接着，学术界又提出了尝试让大模型自动化构建推理示例的**自动思维链（Auto-CoT）** [^7]。
 
 对于基础大模型，我们可以用一个非常直观的零样本测试样例去感受思维链被激活的过程。例如向模型抛出一道暗含生活常识与逻辑陷阱的问题：
 
@@ -162,7 +162,7 @@
 
 ### 2.2 思维树
 
-在线性、单向的思维链基础上，研究人员进一步提出了**思维树（Tree of Thoughts, ToT）** 框架 [^7]。对于更具挑战性、需要全局规划或容易陷入逻辑死胡同的任务（如算 24 点、填字游戏或规划调度），单向单线的 CoT 很可能有去无回——中间某一步哪怕只犯了微小的评估错误，就会使得推理陷入**局部最优**，导致最终结果全盘皆输。如图 6-42 所示，思维树将线性的推理链条扩展成了具有多个分支的树状拓扑结构。它的核心理念可以总结为“**系统性多路径探索 + 智能评估 + 回溯机制**”。它允许模型在推理过程中像树枝一样展开多个可能的探索分支，并交替执行以下环节：
+在线性、单向的思维链基础上，研究人员进一步提出了**思维树（Tree of Thoughts, ToT）** 框架 [^8]。对于更具挑战性、需要全局规划或容易陷入逻辑死胡同的任务（如算 24 点、填字游戏或规划调度），单向单线的 CoT 很可能有去无回——中间某一步哪怕只犯了微小的评估错误，就会使得推理陷入**局部最优**，导致最终结果全盘皆输。如图 6-42 所示，思维树将线性的推理链条扩展成了具有多个分支的树状拓扑结构。它的核心理念可以总结为“**系统性多路径探索 + 智能评估 + 回溯机制**”。它允许模型在推理过程中像树枝一样展开多个可能的探索分支，并交替执行以下环节：
 - **生成候选**：在当前步骤生成多种可能的下一步解法方向。
 - **状态评估**：由模型自身作为“智能裁判”，对各个候选路径的后续成功潜力进行打分排查。
 - **选择与回溯**：借助经典的搜索算法（如**广度优先搜索 BFS** 或**深度优先搜索 DFS**），根据评分选择最优路径继续深入。一旦发现某条路径走进了“死胡同”，立刻向后回溯到上一个安全节点并尝试其他选项。
@@ -207,14 +207,16 @@
 
 [^1]: [Ouyang, L., Wu, J., Jiang, X., et al. (2022). *Training language models to follow instructions with human feedback*.](https://arxiv.org/abs/2203.02155)
 
-[^2]: [Wu, J., et al. (2024). *Identifying Semantic Induction Heads to Understand In-Context Learning*.](https://arxiv.org/abs/2402.11582)
+[^2]: [Ren, J., Guo, Q., Yan, H., et al. (2024). *Identifying Semantic Induction Heads to Understand In-Context Learning*.](https://arxiv.org/abs/2402.13055)
 
-[^3]: [Ahn, S., et al. (2025). *Learning without training: The implicit dynamics of in-context learning*.](https://arxiv.org/abs/2412.12345)
+[^3]: [Dherin, B., Munn, M., Mazzawi, H., et al. (2025). *Learning without training: The implicit dynamics of in-context learning*.](https://arxiv.org/abs/2507.16003)
 
-[^4]: [Zhang, Y., et al. (2024). *Is In-Context Learning in Large Language Models Bayesian? A Martingale Perspective*.](https://arxiv.org/abs/2406.00793)
+[^4]: [Xie, S. M., Raghunathan, A., Liang, P., & Ma, T. (2021). *An Explanation of In-context Learning as Implicit Bayesian Inference*.](https://arxiv.org/abs/2111.02080)
 
-[^5]: [Wei, J., Wang, X., Schuurmans, C., et al. (2022). *Chain-of-Thought Prompting Elicits Reasoning in Large Language Models*.](https://arxiv.org/abs/2201.11903)
+[^5]: [Falck, F., Wang, Z., & Holmes, C. (2024). *Is In-Context Learning in Large Language Models Bayesian? A Martingale Perspective*.](https://arxiv.org/abs/2406.00793)
 
-[^6]: [Zhang, Z., Zhang, A., Li, M., et al. (2022). *Automatic Chain of Thought Prompting in Large Language Models*.](https://arxiv.org/abs/2210.03493)
+[^6]: [Wei, J., Wang, X., Schuurmans, C., et al. (2022). *Chain-of-Thought Prompting Elicits Reasoning in Large Language Models*.](https://arxiv.org/abs/2201.11903)
 
-[^7]: [Yao, S., Yu, D., Zhao, J., et al. (2023). *Tree of Thoughts: Deliberate Problem Solving with Large Language Models*.](https://arxiv.org/abs/2305.10601)
+[^7]: [Zhang, Z., Zhang, A., Li, M., et al. (2022). *Automatic Chain of Thought Prompting in Large Language Models*.](https://arxiv.org/abs/2210.03493)
+
+[^8]: [Yao, S., Yu, D., Zhao, J., et al. (2023). *Tree of Thoughts: Deliberate Problem Solving with Large Language Models*.](https://arxiv.org/abs/2305.10601)
