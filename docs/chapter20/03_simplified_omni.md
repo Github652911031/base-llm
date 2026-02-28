@@ -50,7 +50,7 @@ seeker-omni/
 至于图文侧最终产出的 `packs/mm/train_imgonly.jsonl`，同样以类似风格的结构化格式将 Flickr8k 的图片路径与经过基础规范的中文描述整齐地绑定在了一起：
 
 ```json
-{"id": "flickr8k-2208631481_3e4a5675e1-zhc-0", "system": "你是一个只用中文回答的助手。", "prompt": "请描述这张图片。", "answer": "在草地上赛跑的两只黑狗。", "image": "data/raw/flickr8k/Flicker8k_Dataset/2208631481_3e4a5675e1.jpg"}
+{"id": "flickr8k-2208631481_3e4a5675e1-zhc-0", "system": "你是一个只用中文回答的助手。", "prompt": "请描述这张图片。", "answer": "在草地上赛跑的两只黑狗。", "image": "data/raw/flickr8k/Flickr8k_Dataset/2208631481_3e4a5675e1.jpg"}
 ```
 
 ### 1.2 分词器的构建与训练
@@ -83,7 +83,7 @@ MINIMIND2_CHATML_TOKENS = [
 可以看到上面的代码中，我们引入了两个当前还未详细讲解的模块分别是 `data_paths` 和 `text_bpe`。先来看相对简单的路径管理模块。其实在之前的 `dataprep/download` 数据清洗阶段，为了避免整个项目中随处可见散落的硬编码路径，我们就已经建立了一个集中的路径注册表。在 `dataprep` 目录下新建的这个 `data_paths.py` 中，已经把诸如中间存放语料的目录、分词器保存的目录，以及词表大小上限等统一定义在了这里并暴露出去：
 
 ```python
-# dataprep/prepare/data_paths.py
+# dataprep/data_paths.py
 from pathlib import Path
 
 DATA_RAW = Path("data/raw")
@@ -315,7 +315,7 @@ def run(cfg):
 
 ### 1.3 训练语料特征序列化
 
-有了分词器和对应数据，按理说大模型就可以直接拿它们去训练了，但如果我们直接在 PyTorch 的 `DataLoader` 里挂载前面我们处理好的那些 `.jsonl` 或是 `.txt` 文本，在进行多卡甚至是单卡的大批量吞吐时，由于涉及到海量变长字符串的实时分词与内存分配，CPU 或磁盘 I/O 很容易成为阻碍 GPU 计算的性能瓶颈。为了解决这个问题我们可以**在预处理阶段，提前把所有文本或图像转意符，用分词器转换为等长的数字 ID，并使用 Numpy 的 `memmap`（内存映射）技术，将它们紧凑地当成二维连续矩阵序列化到磁盘特定的二进制（`.bin`）文件中**。我们在 `dataprep/prepare` 目录下创建一个执行脚本 `memmap.py`。这个脚本的作用就是把前面清洗好的语料和训练好的分词器组合起来，分别去生成预训练和微调所需的二进制数据块：
+有了分词器和对应数据，按理说大模型就可以直接拿它们去训练了，但如果我们直接在 PyTorch 的 `DataLoader` 里挂载前面我们处理好的那些 `.jsonl` 或是 `.txt` 文本，在进行多卡甚至是单卡的大批量吞吐时，由于涉及到海量变长字符串的实时分词与内存分配，CPU 或磁盘 I/O 很容易成为阻碍 GPU 计算的性能瓶颈。为了解决这个问题我们可以**在预处理阶段，提前把文本与图像都转换为可训练的数值表示。文本用分词器转换为等长的数字 ID，再使用 Numpy 的 `memmap`（内存映射）技术，将这些张量紧凑地当成二维连续矩阵序列化到磁盘特定的二进制（`.bin`）文件中**。我们在 `dataprep/prepare` 目录下创建一个执行脚本 `memmap.py`。这个脚本的作用就是把前面清洗好的语料和训练好的分词器组合起来，分别去生成预训练和微调所需的二进制数据块：
 
 ```python
 # dataprep/prepare/memmap.py
@@ -645,7 +645,7 @@ class ModelConfig:
     special_tokens_scheme: str = DEFAULT_SPECIAL_TOKENS_SCHEME
 ```
 
-在 `config.py` 中，我们为超参数设定了默认的词表方案，所以我们需要在 `special_tokens.py` 中将整个模型用到的特殊占位符（如 `<bos>` 和 `<img>`）以及对应的方案列表进行统一定义：
+在 `config.py` 中，我们为超参数设定了默认的词表方案，所以我们需要在 `special_tokens.py` 中将整个模型用到的特殊占位符（如 `<|im_start|>`、`<|im_end|>` 与 `<img>`）以及对应的方案列表进行统一定义：
 
 ```python
 # seeker_omni/special_tokens.py
@@ -655,48 +655,74 @@ from dataclasses import dataclass
 class TokenSchemeSpec:
     name: str
     special_tokens: list[str]
-    # ... 其他控制标记符属性（如 pad_token, bos_token, eos_token 等）
+    pad_token: str
+    bos_token: str
+    eos_token: str
+    unk_token: str
 
-# 定义兼容 ChatML 格式的特殊占位符方案
+
 MINIMIND2_CHATML = TokenSchemeSpec(
     name="minimind2_chatml",
-    special_tokens=["<|endoftext|>", "<|im_start|>", "<|im_end|>", "<img_bos>", "<img>", "<img_eos>"],
-    # ... 其他必须指定的常规占位符具体取值
+    special_tokens=[
+        "<|endoftext|>",
+        "<|im_start|>",
+        "<|im_end|>",
+        "<img_bos>",
+        "<img>",
+        "<img_eos>",
+    ],
+    pad_token="<|endoftext|>",
+    bos_token="<|im_start|>",
+    eos_token="<|im_end|>",
+    unk_token="<|endoftext|>",
 )
+
 
 _SPECS: dict[str, TokenSchemeSpec] = {
     MINIMIND2_CHATML.name: MINIMIND2_CHATML,
 }
 
-def get_token_scheme_spec(scheme):
-    # 供整个模型通过方案名称字符串，拿回定义好的 TokenSchemeSpec 结构体
+
+def get_token_scheme_spec(scheme: str | None) -> TokenSchemeSpec:
     scheme = (scheme or MINIMIND2_CHATML.name).strip()
-    # ... 如果字典里找不到，抛出 ValueError
-    return _SPECS.get(scheme)
+    spec = _SPECS.get(scheme)
+    if spec is None:
+        opts = ", ".join(sorted(_SPECS.keys()))
+        raise ValueError(f"unknown special_tokens_scheme={scheme!r} (expected one of: {opts})")
+    return spec
+
 
 @dataclass(frozen=True)
 class SpecialTokenIds:
-    # 核心控制标记
     pad: int
+    unk: int
     bos: int
     eos: int
-    # 多模态占位标记
     img_bos: int
     img: int
     img_eos: int
 
-def build_special_token_ids(spec):
-    # 动态将方案中的字符串映射为连续的词表前部 ID
+
+def build_special_token_ids(spec: TokenSchemeSpec) -> SpecialTokenIds:
     tok2id = {t: i for i, t in enumerate(spec.special_tokens)}
-    # ... 如果有缺失的特殊符号，则抛出异常的安全校验
+
+    def _id(t: str) -> int:
+        if t not in tok2id:
+            raise ValueError(f"required special token missing from scheme={spec.name!r}: {t}")
+        return int(tok2id[t])
+
     return SpecialTokenIds(
-        pad=tok2id[spec.pad_token],
-        bos=tok2id[spec.bos_token],
-        eos=tok2id[spec.eos_token],
-        img_bos=tok2id["<img_bos>"],
-        img=tok2id["<img>"],
-        img_eos=tok2id["<img_eos>"],
+        pad=_id(spec.pad_token),
+        unk=_id(spec.unk_token),
+        bos=_id(spec.bos_token),
+        eos=_id(spec.eos_token),
+        img_bos=_id("<img_bos>"),
+        img=_id("<img>"),
+        img_eos=_id("<img_eos>"),
     )
+
+
+DEFAULT_SPECIAL_TOKENS_SCHEME = MINIMIND2_CHATML.name
 ```
 
 ### 3.2 文本嵌入
@@ -1550,7 +1576,7 @@ from pathlib import Path
 # ... (省略 _read_yaml, _project_root 等帮助函数) ...
 
 def train():
-    # ... (省略上文已实现的纯文本阶段管线) ...
+    # ... (省略上文已实现的纯文本阶段管线)
     pass
 
 def e2e():
@@ -1567,3 +1593,5 @@ def run_all():
     e2e()
     return 0
 ```
+
+那么现在全部的核心内容我们就写完了。接下来，只需要在相关模块里补齐工程化的封装收口（例如通过 `__init__.py` 暴露对外 API、在 `__main__.py` 中提供 `python -m ...` 的启动入口，并将训练阶段的参数收拢到 `config.py` / YAML 等配置文件中统一管理），就可以使用 `uv run python -m seeker_omni` 命令将整套训练跑起来了。
