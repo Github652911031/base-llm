@@ -158,6 +158,7 @@
     - [x] [BLIP-2 与 LLaVA](./docs/chapter20/01_blip2_llava.md)
     - [x] [原生统一架构](./docs/chapter20/02_unified_architecture.md)
     - [x] [从 0 训练简化版 Omni 模型](./docs/chapter20/03_simplified_omni.md)
+- **第 3 章：虚拟人技术**
 
 
 ## 致谢
