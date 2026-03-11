@@ -12,9 +12,12 @@
 </div>
 
 <div align="center">
-  <img src="https://img.shields.io/github/stars/datawhalechina/base-nlp?style=for-the-badge&logo=github&color=ff6b6b" alt="GitHub stars"/>
-  <img src="https://img.shields.io/github/forks/datawhalechina/base-nlp?style=for-the-badge&logo=github&color=4ecdc4" alt="GitHub forks"/>
+  <img src="https://img.shields.io/github/stars/datawhalechina/base-llm?style=for-the-badge&logo=github&color=ff6b6b" alt="GitHub stars"/>
+  <img src="https://img.shields.io/github/forks/datawhalechina/base-llm?style=for-the-badge&logo=github&color=4ecdc4" alt="GitHub forks"/>
   <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <a href="https://github.com/datawhalechina/base-llm/releases">
+    <img src="https://img.shields.io/github/v/release/datawhalechina/base-llm?style=for-the-badge&logo=github&color=brightgreen" alt="GitHub release"/>
+  </a>
 </div>
 
 <div align="center">
@@ -28,7 +31,7 @@
 
 > **注意：**
 > - **关于 Pull Request**：本项目目前主要接受 `Extra-chapter` 的共建，提交 PR 前请参阅 [Extra-chapter/README.md](./Extra-chapter/README.md)。
-> - **问题反馈**：如果您对主教程有任何建议或发现任何问题，欢迎通过 [Issue](https://github.com/datawhalechina/base-nlp/issues) 进行反馈。
+> - **问题反馈**：如果您对主教程有任何建议或发现任何问题，欢迎通过 [Issue](https://github.com/datawhalechina/base-llm/issues) 进行反馈。
 
 ## 📖 项目简介
 

@@ -12,9 +12,12 @@
 </div>
 
 <div align="center">
-  <img src="https://img.shields.io/github/stars/datawhalechina/base-nlp?style=for-the-badge&logo=github&color=ff6b6b" alt="GitHub stars"/>
-  <img src="https://img.shields.io/github/forks/datawhalechina/base-nlp?style=for-the-badge&logo=github&color=4ecdc4" alt="GitHub forks"/>
+  <img src="https://img.shields.io/github/stars/datawhalechina/base-llm?style=for-the-badge&logo=github&color=ff6b6b" alt="GitHub stars"/>
+  <img src="https://img.shields.io/github/forks/datawhalechina/base-llm?style=for-the-badge&logo=github&color=4ecdc4" alt="GitHub forks"/>
   <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <a href="https://github.com/datawhalechina/base-llm/releases">
+    <img src="https://img.shields.io/github/v/release/datawhalechina/base-llm?style=for-the-badge&logo=github&color=brightgreen" alt="GitHub release"/>
+  </a>
 </div>
 
 <div align="center">
